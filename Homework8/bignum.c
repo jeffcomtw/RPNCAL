@@ -1,31 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
-
-#define	MAX_NUM_DIGITS 1000
-
-#define PLUS	1
-#define MINUS	-1
-
-typedef struct {
-	int integers[MAX_NUM_DIGITS];	// The decimal part.
-	int fractions[MAX_NUM_DIGITS];	// The fraction part.
-	int sign;					// 0 means minus, 1 means plus.
-	int numIntegers;			// Size of integers.
-	int numFractions;			// Size of fractions.
-} bignum;
-
-void initializeBignum(bignum *);
-void subtractBignum(bignum *, bignum *, bignum *);
-int divide_bignum(bignum *, bignum *, bignum *);
-void leftShift(bignum *, int);
-void rightShift(bignum *, int);
-void multiply_bignum(bignum *, bignum *, bignum *);
-void optimizeBignum(bignum *);
-int compareBignum(bignum *, bignum *);
-int isBignumZero(bignum *);
-int getMax(int, int);
-void analizeNumString(char *string, int *numChars, int *numIntegers, int *numFractions);
+#include "bignum.h"
 
 char * bignumToString(bignum *num)
 {
@@ -41,6 +17,11 @@ char * bignumToString(bignum *num)
 	}
 
 	count += num->numIntegers;
+
+	if (count < 0)
+	{
+		printf("Hello world");
+	}
 
 	if (num->numFractions > 0)
 	{
@@ -461,7 +442,7 @@ void multiply_bignum(bignum *a, bignum *b, bignum *c)
 {
 	bignum aCopy = *a;
 	bignum tmp;
-	int i, j, len;
+	int i, j;
 	int digit;
 
 	// TODO: compare a and b for the optimized performance.
@@ -510,8 +491,6 @@ void multiply_bignum(bignum *a, bignum *b, bignum *c)
 
 int divide_bignum(bignum *a, bignum *b, bignum *c)
 {
-	bignum row;                     /* represent shifted row */
-	bignum tmp;                     /* placeholder bignum */
 	int aSign, bSign;				/* temporary signs */
 	int i;							/* counters */
 	int numShiftRequired;
@@ -525,14 +504,14 @@ int divide_bignum(bignum *a, bignum *b, bignum *c)
 	if (isBignumZero(b))
 	{
 		// Divided by zero.
-		return EXIT_FAILURE;
+		return 0;
 	}
 
 	initializeBignum(c);
 
 	if (isBignumZero(a))
 	{
-		return EXIT_SUCCESS;
+		return 1;
 	}
 
 	c->sign = (a->sign == b->sign) ? PLUS : MINUS;
@@ -560,7 +539,7 @@ int divide_bignum(bignum *a, bignum *b, bignum *c)
 	{
 		numShiftRequired = (a->numIntegers > b->numIntegers) ? a->numIntegers - b->numIntegers : 0;
 	}
-	
+
 	c->numIntegers = numShiftRequired + 1;
 	leftShift(&bCopy, numShiftRequired);
 	answerIndex = numShiftRequired;
@@ -651,7 +630,7 @@ int divide_bignum(bignum *a, bignum *b, bignum *c)
 	a->sign = aSign;
 	b->sign = bSign;
 
-	return EXIT_SUCCESS;
+	return 1;
 }
 
 int isBignumZero(bignum *num)
@@ -662,6 +641,15 @@ int isBignumZero(bignum *num)
 	}
 
 	return 0;
+}
+
+bignum *zeroBignum;
+
+bignum getZeroBignum()
+{
+	bignum num;
+	initializeBignum(&num);
+	return num;
 }
 
 // Transfer the large number in the string to a big number.
@@ -762,200 +750,4 @@ void analizeNumString(char *string, int *numChars, int *numIntegers, int *numFra
 	*numChars = _numChars;
 	*numIntegers = _numDecimals;
 	*numFractions = _numFractions;
-}
-
-void main()
-{
-	int i, j;
-	int len = 0;
-	int isOkay = 0;
-
-	int numsSize = 100;
-	bignum *nums = (bignum *) malloc(sizeof(bignum) * numsSize);
-	bignum num1, num2, num3;
-	char *string = NULL;
-	int answer;
-
-	for (i = 0; i < numsSize; i++)
-	{
-		initializeBignum(&nums[i]);
-	}
-
-	//// Test compare
-	//printf("Test comparing\n");
-	//len = 0;
-	//stringToBignum("12.34", &nums[len++]);
-
-	//stringToBignum("12", &nums[len++]);
-	//stringToBignum("12.35", &nums[len++]);
-	//stringToBignum("12.33", &nums[len++]);
-	//stringToBignum("12.3", &nums[len++]);
-	//stringToBignum("12.345", &nums[len++]);
-	//stringToBignum("-12.35", &nums[len++]);
-	//stringToBignum("-12.33", &nums[len++]);
-	//stringToBignum("-12.3", &nums[len++]);
-	//stringToBignum("-12.345", &nums[len++]);
-	//stringToBignum("0", &nums[len++]);
-	//stringToBignum("-0", &nums[len++]);
-
-	//for (i = 1; i < len; i++)
-	//{
-	//	answer = compareBignum(&nums[0], &nums[i]);
-	//	string = (answer == 0) ? "=" : ((answer > 0) ? ">" : "<");
-	//	printf("%s %s %s\n", bignumToString(&nums[0]), string, bignumToString(&nums[i]));
-	//}
-
-	//printf("===================\n");
-	//len = 0;
-	//stringToBignum("-12.34", &nums[len++]);
-
-	//stringToBignum("12", &nums[len++]);
-	//stringToBignum("12.35", &nums[len++]);
-	//stringToBignum("12.33", &nums[len++]);
-	//stringToBignum("12.3", &nums[len++]);
-	//stringToBignum("12.345", &nums[len++]);
-	//stringToBignum("-12.35", &nums[len++]);
-	//stringToBignum("-12.33", &nums[len++]);
-	//stringToBignum("-12.3", &nums[len++]);
-	//stringToBignum("-12.345", &nums[len++]);
-	//stringToBignum("0", &nums[len++]);
-	//stringToBignum("-0", &nums[len++]);
-
-	//for (i = 1; i < len; i++)
-	//{
-	//	answer = compareBignum(&nums[0], &nums[i]);
-	//	string = (answer == 0) ? "=" : ((answer > 0) ? ">" : "<");
-	//	printf("%s %s %s\n", bignumToString(&nums[0]), string, bignumToString(&nums[i]));
-	//}
-
-	//// Test math.
-	//printf("\nTest addition\n");
-	//len = 0;
-	//stringToBignum("1.1", &nums[len++]);
-	//stringToBignum("-2.2", &nums[len++]);
-	//stringToBignum("0", &nums[len++]);
-	//stringToBignum("-0", &nums[len++]);
-
-	//for (i = 0; i < len; i++)
-	//{
-	//	for (j = 0; j < len; j++)
-	//	{
-	//		num1 = nums[i];
-	//		num2 = nums[j];
-	//		initializeBignum(&num3);
-	//		addBignum(&num1, &num2, &num3);
-	//		printf("%s + %s = %s\n", bignumToString(&num1), bignumToString(&num2), bignumToString(&num3));
-	//	}
-	//}
-
-	//printf("\nTest subtract\n");
-	//len = 0;
-	//stringToBignum("1.1", &nums[len++]);
-	//stringToBignum("-2.2", &nums[len++]);
-	//stringToBignum("0", &nums[len++]);
-	//stringToBignum("-0", &nums[len++]);
-
-	//for (i = 0; i < len; i++)
-	//{
-	//	for (j = 0; j < len; j++)
-	//	{
-	//		num1 = nums[i];
-	//		num2 = nums[j];
-	//		initializeBignum(&num3);
-	//		subtractBignum(&num1, &num2, &num3);
-	//		printf("%s - %s = %s\n", bignumToString(&num1), bignumToString(&num2), bignumToString(&num3));
-	//	}
-	//}
-
-	//printf("\nTest shift\n");
-	//len = 0;
-	//stringToBignum("1.00", &nums[len++]);
-	//stringToBignum("0.01", &nums[len++]);
-	//stringToBignum("-7654.3210", &nums[len++]);
-	//stringToBignum("123.456", &nums[len++]);
-	//stringToBignum("00000000.0000000000", &nums[len++]);
-	//stringToBignum("1.1", &nums[len++]);
-
-	//for (i = 0; i < len; i++)
-	//{
-	//	num1 = nums[i];
-	//	j = i + 1;
-	//	printf("%s << %d = ", bignumToString(&num1), j);
-	//	leftShift(&num1, j);
-	//	printf("%s\n", bignumToString(&num1));
-	//}
-
-	//printf("===============\n");
-	//len = 0;
-	//stringToBignum("1.00", &nums[len++]);
-	//stringToBignum("0.01", &nums[len++]);
-	//stringToBignum("-7654.3210", &nums[len++]);
-	//stringToBignum("123.456", &nums[len++]);
-	//stringToBignum("00000000.0000000000", &nums[len++]);
-	//stringToBignum("1.1", &nums[len++]);
-
-	//for (i = 0; i < len; i++)
-	//{
-	//	num1 = nums[i];
-	//	j = i + 1;
-	//	printf("%s >> %d = ", bignumToString(&num1), j);
-	//	rightShift(&num1, j);
-	//	printf("%s\n", bignumToString(&num1));
-	//}
-
-	//printf("\nTest multiple\n");
-	//len = 0;
-	//stringToBignum("2", &nums[len++]);
-	//stringToBignum("-3", &nums[len++]);
-	//stringToBignum("-7.7", &nums[len++]);
-	//stringToBignum("11.11", &nums[len++]);
-	//stringToBignum("0", &nums[len++]);
-
-	//for (i = 0; i < len; i++)
-	//{
-	//	for (j = 0; j < len; j++)
-	//	{
-	//		num1 = nums[i];
-	//		num2 = nums[j];
-	//		initializeBignum(&num3);
-	//		multiply_bignum(&num1, &num2, &num3);
-	//		printf("%s * %s = %s\n", bignumToString(&num1), bignumToString(&num2), bignumToString(&num3));
-	//	}
-	//}
-
-	printf("\nTest divide\n");
-	len = 0;
-	stringToBignum("99999", &nums[len++]);
-	stringToBignum("9", &nums[len++]);
-	stringToBignum("-7", &nums[len++]);
-	stringToBignum("1.5", &nums[len++]);
-	stringToBignum("-0.03", &nums[len++]);
-	stringToBignum("0", &nums[len++]);
-
-	for (i = 0; i < len; i++)
-	{
-		for (j = 0; j < len; j++)
-		{
-			if (i == j)
-			{
-				continue;
-			}
-
-			num1 = nums[i];
-			num2 = nums[j];
-			initializeBignum(&num3);
-			isOkay = divide_bignum(&num1, &num2, &num3);
-
-			if (isOkay == EXIT_FAILURE)
-			{
-				printf("%s / %s = %s\n", bignumToString(&num1), bignumToString(&num2), "Error: divided by zero");
-			}
-			else
-			{
-				printf("%s / %s = %s\n", bignumToString(&num1), bignumToString(&num2), bignumToString(&num3));
-			}
-		}
-	}
-
-	system("pause");
 }

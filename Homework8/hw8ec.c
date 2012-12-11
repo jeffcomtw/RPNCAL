@@ -5,12 +5,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <ctype.h>
 #include <string.h>
 #include "calc.h"
+#include "bignum.h"
 
-#define MAXOP 100
+#define MAXOP 100000
 #define NUMBER '0'
 
 char out[256];  //this should be global (outside RPNCalc)
@@ -31,122 +31,90 @@ void printAllInput(FILE *inputFile) {
 	rewind(inputFile);
 }
 
-int RPNCalc( FILE *fpi, FILE *fpo) // char *RPNCalc
+int RPNCalc( FILE *fpi, FILE *fpo)
 {
 	int type = 0, i = 0;
 	char c = '\0';
 
-	double op2 = 0.0;
+	bignum op2 = getZeroBignum();
 	char s[MAXOP];
-	double x = 0, y = 0;
+	bignum x, y, z;
 
-	double storedValues[10];
+	bignum storedValues[10];
 	int index = 0;
 
-	printAllInput(fpi);
+	//printAllInput(fpi);
 
 	for (i = 0; i < 10; i++)
 	{
-		storedValues[i] = 0.0;
+		storedValues[i] = getZeroBignum();
 	}
 
 	while((type = getop(s, fpi)) != EOF)
 	{
 		switch(type)
 		{
-		case -100:
-			x = sin(pop());
-			push(x);
-			break;
-
-		case -101:
-			x = cos(pop());
-			push(x);
-			break;
-			//tan	
-		case -102:
-			x = tan(pop());
-			push(x);
-			break;
-			//asin
-		case -103:
-			x = asin(pop());
-			push(x);
-			break;
-			//acos
-		case -104:
-			x = acos(pop());
-			push(x);
-			break;
-			//atan
-		case -105:
-			x = atan(pop());
-			push(x);
-			break;
-			//exp
-		case -106:
-			x = exp(pop());
-			push(x);
-			break;
-			//log
-		case -107:
-			x = log(pop());
-			push(x);
-			break;
-			//pow
-		case -108:
-			op2 = pop();
-			push(pow(pop(), op2));
-			break;	
-			//sqrt 
-		case -109:
-			x = sqrt(pop());
-			push(x);
-			break;
+			//case -109:
+			//	x = sqrt(pop());
+			//	push(x);
+			//	break;
 
 		case NUMBER:
-			x = atof(s);
+			stringToBignum(s, &x);
 			push(x);
 			break;
 
 		case '+':
-			x = pop() + pop();
-			push(x);
+			x = pop();
+			y = pop();
+			addBignum(&x, &y, &z);
+			push(z);
 			break; 
 
 		case '-':
-			op2 = pop();
-			push(pop() - op2);
+			x = pop();
+			y = pop();
+			subtractBignum(&y, &x, &z);
+			push(z);
 			break;
 
 		case '*':
-			x = pop() * pop();
-			push(x);
+			x = pop(); 
+			y = pop();
+			multiply_bignum(&x, &y , &z);
+			push(z);
 			break;
 
 		case '/':
-			op2 =pop();
+			x = pop();
+			y = pop();
 
-			if(op2 != 0.0)
-				push(pop()/op2);
+			if (divide_bignum(&y, &x, &z))
+			{
+				push(z);
+			}
 			else
+			{
+				printf("error: zero divisor\n");
 				fprintf(fpo, "error: zero divisor\n");
+			}
+
 			break; 
 
 		case '\n':
-			x = pop();
-			printf("\t%.16g\n", x);
-			fprintf(fpo, "\t%.16g\n", x);
-			push(x);
+			//	x = pop();
+			//	printf("\t%s\n", bignumToString(&x));
+			//	fprintf(fpo, "\t%s\n", bignumToString(&x));
+			//	push(x);
 			break;
 
 		case '=':
-			op2 = pop();
+			x = pop();
 
-			if (op2 != 0.0)
+			if (!isBignumZero(&x))
 			{
-				printf("\t%.16g\n", op2);
-				fprintf(fpo, "\t%.16g\n", op2);
+				printf("\t%s\n", bignumToString(&x));
+				fprintf(fpo, "\t%s\n", bignumToString(&x));
 				push(op2);
 			}
 
@@ -155,14 +123,14 @@ int RPNCalc( FILE *fpi, FILE *fpo) // char *RPNCalc
 		case 'X':
 			x = pop();
 
-			if (x == 0.0)
+			if (isBignumZero(&x))
 			{
 				break;
 			}
 
 			y = pop();
 
-			if (y == 0.0)
+			if (isBignumZero(&y))
 			{
 				break;
 			}
@@ -175,7 +143,7 @@ int RPNCalc( FILE *fpi, FILE *fpo) // char *RPNCalc
 		case 'S':	// Store the popped value to temporary storage.
 			x = pop();
 
-			if (x == 0.0)
+			if (isBignumZero(&x))
 			{
 				break;
 			}
@@ -194,7 +162,7 @@ int RPNCalc( FILE *fpi, FILE *fpo) // char *RPNCalc
 
 			break;
 
-		case '#':
+		case '#':	// The comments.
 			fputc('#', fpo);
 
 			while (1)
@@ -208,26 +176,37 @@ int RPNCalc( FILE *fpi, FILE *fpo) // char *RPNCalc
 				{
 					break;
 				}
+
+				if (c == EOF)
+				{
+					ungetch(c);
+					break;
+				}
 			}
 
 			break;
 
-		case 'D':
-			op2 = pop();
-			push(op2);
-			push(op2);
+		case 'D':	// Duplicate the top item.
+			x = pop();
+			push(x);
+			push(x);
 			break;
 
 		default:
+			printf("error: unknown command %s\n", s );
 			fprintf(fpo, "error: unknown command %s\n", s );	
 			break;
 		}
 	}
 
 	x = pop();
-	printf("\t%.16g\n", x);
-	fprintf(fpo, "\t%.16g\n", x);
-	push(x);
+
+	if (isBignumZero(&x))
+	{
+		printf("\t%s\n", bignumToString(&x));
+		fprintf(fpo, "\t%s\n", bignumToString(&x));
+		push(x);
+	}
 
 	return 0;
 }
@@ -238,7 +217,7 @@ int getop(char s[],  FILE *fp)
 	char c = '\0';
 
 	// Skip all spaces and tabs.
-	while ((s[i] = c = getch(fp)) == ' ' || c == '\t' )
+	while ((s[i] = c = getch(fp)) == ' ' || c == '\t')
 		;
 
 	if (islower(c))
@@ -261,24 +240,6 @@ int getop(char s[],  FILE *fp)
 		if (c != EOF)
 			ungetch(c);
 
-		if (strcmp("sin", s) == 0)
-			return -100;
-		if(strcmp("cos", s) == 0)
-			return -101;
-		if (strcmp("tan", s) == 0)
-			return -102;
-		if (strcmp("asin", s) == 0)
-			return -103;
-		if(strcmp("acos", s) == 0)
-			return -104;
-		if(strcmp("atan", s) == 0)
-			return -105;
-		if(strcmp("exp", s) == 0)
-			return -106;
-		if(strcmp("log", s) == 0)
-			return -107;
-		if(strcmp("pow", s) == 0)
-			return -108;
 		if(strcmp("sqrt", s) == 0)
 			return -109;
 	}

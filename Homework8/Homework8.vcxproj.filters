@@ -27,9 +27,15 @@
     <ClCompile Include="hw8ec.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="calc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bignum.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

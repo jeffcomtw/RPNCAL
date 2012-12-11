@@ -80,9 +80,11 @@
     <ClCompile Include="bignum.c" />
     <ClCompile Include="getch.c" />
     <ClCompile Include="hw8ec.c" />
+    <ClCompile Include="main.c" />
     <ClCompile Include="stack.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bignum.h" />
     <ClInclude Include="calc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

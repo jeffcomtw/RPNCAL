@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "calc.h"
 
 int main()
@@ -13,6 +14,8 @@ int main()
 
 	fclose(fpi);
 	fclose(fpo);
+
+	system("pause");
 
 	return 0;
 }
