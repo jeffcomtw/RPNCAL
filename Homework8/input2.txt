@@ -1,0 +1,25 @@
+#warm-up
+63 12345679 *
+#Should be errors
+1 2 - 4 5 + 0 /
+1 2 - 4 5 &
+#bad memory commands
+1 2 3 * * T5
+12345679 27 * Z0
+#find the distance in miles from sjsu to tahiti
+3.141592658979324 180 / = S9 37 R9 * = S0 0 121.5 - R9 * = S1 0 17.5 - R9 * = S2 0 149 - R9 *
+S3 3961 = S9 R0 cos R1 sin * R9 *
+S4 R0 cos R1 cos * R9 *
+S5 R0 sin R9 *
+S6 R2 cos R3 sin * R9 *
+S0 R2 cos R3 cos * R9 *
+S1 R2 sin R9 *
+S7 R0 R4 * R1 R5 * R6 R7 * + + R9 D * /
+acos R9 *
+#AGM Pi
+2 sqrt S1 1 S2 0 S3 1 S4 1 S5 R1 R2 + 2 / S6 R1 R2 * sqrt
+S7 R1 R2 - 2 / S8 R3 D * R5 * R4 X - S4 R5 2 * S5 R6 R7 + 2 / S1 R6 R7 * sqrt
+S2 R6 R7 - 2 / S3 R8 D * R5 * R4 X - S4 R5 2 * S5 R1 R2 + 2 / S6 R1 R2 * sqrt
+S7 R1 R2 - 2 / S8 R3 D * R5 * R4 X - S4 R5 2 * S5 R6 R7 + 2 / S1 R6 R7 * sqrt
+S2 R6 R7 - 2 / S3 R8 D * R5 * R4 X - S4 R5 2 * S5 R1 R2 + 2 / S6 R1 R2 * sqrt
+S7 R1 R2 - 2 / S8 R3 D * R5 * R4 X - S4 R5 2 * S5 R6 D * 2 * R4/
