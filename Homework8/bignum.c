@@ -554,7 +554,7 @@ int divide_bignum(bignum *a, bignum *b, bignum *c)
 			}
 		}
 
-		numShiftRequired = i + 1;
+		numShiftRequired = (a->numIntegers - b->numIntegers) + i + 1;
 	}
 	else
 	{
@@ -925,14 +925,11 @@ void main()
 
 	printf("\nTest divide\n");
 	len = 0;
-	stringToBignum("10", &nums[len++]);
-	stringToBignum("-5", &nums[len++]);
-	stringToBignum("2", &nums[len++]);
-	stringToBignum("3", &nums[len++]);
-	stringToBignum("7", &nums[len++]);
+	stringToBignum("99999", &nums[len++]);
+	stringToBignum("9", &nums[len++]);
+	stringToBignum("-7", &nums[len++]);
 	stringToBignum("1.5", &nums[len++]);
-	stringToBignum("0.3", &nums[len++]);
-	stringToBignum("-0.012", &nums[len++]);
+	stringToBignum("-0.03", &nums[len++]);
 	stringToBignum("0", &nums[len++]);
 
 	for (i = 0; i < len; i++)
