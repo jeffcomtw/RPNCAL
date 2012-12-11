@@ -242,8 +242,8 @@ int compare_bignum(bignum *a, bignum *b)
 	int i;
 	int minNumFraction;
 
-	//zero_justify(a);
-	//zero_justify(b);
+	zero_justify(a);
+	zero_justify(b);
 
 	// Compaire the sign.
 	if (a->sign != b->sign)
@@ -335,6 +335,13 @@ void subtract_bignum(bignum *a, bignum *b, bignum *c)
 	{
 		a->sign = b->sign = PLUS;
 		add_bignum(b, a, c);
+		return;
+	}
+
+	if (compare_bignum(a, b) < 0)
+	{
+		subtract_bignum(b, a, c);
+		c->sign *= -1;
 		return;
 	}
 
@@ -432,15 +439,33 @@ void subtract_bignum(bignum *a, bignum *b, bignum *c)
 	zero_justify(c);
 }
 
-void zero_justify(bignum *n)
+void zero_justify(bignum *num)
 {
-	while ((n->numDecimals > 0) && (n->decimals[ n->numDecimals ] == 0))
+
+	while ((num->numDecimals > 0) && num->decimals[num->numDecimals - 1] == 0)
 	{
-		n->numDecimals --;
+		if(num->decimals[num->numDecimals - 1] != 0)
+		{
+			break;
+		}
+
+		num->numDecimals--;
 	}
 
-	if ((n->numDecimals == 0) && (n->decimals[0] == 0))
-		n->sign = PLUS;	/* hack to avoid -0 */
+	while((num->numFractions > 0) && (num->fractions[num->numFractions - 1] == 0))
+	{
+		if(num->fractions[num->numFractions - 1] != 0)
+		{
+			break;
+		}
+
+		num->numFractions--;
+	}
+
+	if (num->sign == MINUS && (num->numDecimals == 1) && (num->decimals[0] == 0) && (num->numFractions == 0))
+	{
+		num->sign = PLUS;
+	}
 }
 
 void digit_shift(bignum *n, int d)		/* multiply n by 10^d */
@@ -647,8 +672,8 @@ void main()
 	}
 
 	// Test compare
-	isOkay = stringToBignum("-12.34", &nums[0]);
-	isOkay = stringToBignum("12.34", &nums[1]);
+	isOkay = stringToBignum("12.34", &nums[0]);
+	isOkay = stringToBignum("102.34", &nums[1]);
 	isOkay = stringToBignum("-12.34", &nums[2]);
 	isOkay = stringToBignum("-10.34", &nums[3]);
 	isOkay = stringToBignum("12", &nums[4]);
