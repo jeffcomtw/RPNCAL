@@ -51,6 +51,8 @@ typedef struct {
 void initializeBignum(bignum *);
 void subtract_bignum(bignum *, bignum *, bignum *);
 void divide_bignum(bignum *, bignum *, bignum *);
+void leftShift(bignum *, int);
+void rightShift(bignum *, int);
 void multiply_bignum(bignum *, bignum *, bignum *);
 void optimizeBignum(bignum *);
 int compare_bignum(bignum *, bignum *);
@@ -316,7 +318,7 @@ void subtract_bignum(bignum *a, bignum *b, bignum *c)
 	int left, right;
 	int result;
 
-	// Determine if the two numbers are both positive. If not, call the add function.
+	// Determine if the two numbers are both positive or negative. If not, call the add function.
 	if (a->sign != b->sign)
 	{
 		// Call substract.
@@ -338,9 +340,9 @@ void subtract_bignum(bignum *a, bignum *b, bignum *c)
 
 	if (a->sign == MINUS)
 	{
-		a->sign = b->sign = PLUS;
-		add_bignum(b, a, c);
-		a->sign = b->sign = MINUS;
+		b->sign = PLUS;
+		add_bignum(b, a, c);	
+		b->sign = MINUS;
 		return;
 	}
 
@@ -426,11 +428,16 @@ void optimizeBignum(bignum *num)
 	}
 }
 
-void digit_shift(bignum *num, int powerOfTen)		/* multiply num by 10^powerOfTen */
+void leftShift(bignum *num, int movement)
 {
-	int i;
+	int i, len;
 
-	if ((num->numIntegers == 1) && (num->integers[0] == 0))
+	if (movement <= 0)
+	{
+		return;
+	}
+
+	if ((num->numIntegers == 1) && (num->integers[0] == 0) && (num->numFractions == 0))
 	{
 		return;
 	}
@@ -438,57 +445,123 @@ void digit_shift(bignum *num, int powerOfTen)		/* multiply num by 10^powerOfTen 
 	// Shift the integers.
 	for (i = num->numIntegers - 1; i >= 0; i--)
 	{
-		num->integers[i + powerOfTen] = num->integers[i];
+		num->integers[i + movement] = num->integers[i];
 	}
 
-	for (i=0; i<powerOfTen; i++)
+	// Move the fractions to integers.
+	for (i = 0; i < movement; i++)
 	{
-		num->integers[i] = 0;
+		num->integers[i] = num->fractions[movement - 1 - i];
 	}
 
-	num->numIntegers = num->numIntegers + powerOfTen;
+	// Move the fractions.
+	for (i = 0, len = num->numFractions - movement; i < len; i++)
+	{
+		num->fractions[i] = num->fractions[i + movement];
+	}
+
+	num->numIntegers += movement;
+	num->numFractions -= movement;
+
+	if (num->numFractions < 0)
+	{
+		num->numFractions = 0;
+	}
+
+	optimizeBignum(num);
+}
+
+void rightShift(bignum *num, int movement)
+{
+	int i;
+
+	if (movement <= 0)
+	{
+		return;
+	}
+
+	if ((num->numIntegers == 1) && (num->integers[0] == 0) && (num->numFractions == 0))
+	{
+		return;
+	}
+
+	// Move the fractions.
+	for (i = num->numFractions + movement - 1; i >= movement; i--)
+	{
+		num->fractions[i] = num->fractions[i - movement];
+	}
+
+	// Move the integers to fractions.
+	for (i = 0; i < movement; i++)
+	{
+		num->fractions[i] = num->integers[movement - 1 - i];
+	}
+
+	// Shift the integers.
+	for (i = 0; i < num->numIntegers; i++)
+	{
+		num->integers[i] = num->integers[i + movement];
+	}
+
+	num->numIntegers -= movement;
+
+	if (num->numIntegers < 1)
+	{
+		num->numIntegers = 1;
+		num->integers[0] = 0;
+	}
+
+	num->numFractions += movement;
+	optimizeBignum(num);
 }
 
 void multiply_bignum(bignum *a, bignum *b, bignum *c)
 {
-	bignum row;			/* represent shifted row */
-	bignum tmp;			/* placeholder bignum */
-	int i,j;			/* counters */
+	bignum aCopy = *a;
+	bignum tmp;
+	int i, j, len;
+	int digit;
+
+	// TODO: compare a and b for the optimized performance.
+	if (compare_bignum(a, b) < 0)
+	{
+		multiply_bignum(b, a, c);
+		return;
+	}
 
 	initializeBignum(c);
+	rightShift(&aCopy, b->numFractions);
 
-	row = *a;
-
-	for (i=0; i<=b->numIntegers; i++)
+	// Multiple by the fractional numbers.
+	for (i = 0; i < b->numFractions; i++)
 	{
-		for (j=1; j<=b->integers[i]; j++)
+		digit = b->integers[i];
+
+		// Add {digit} times.
+		for (j = 1; j <= digit; j++)
 		{
-			add_bignum(c,&row,&tmp);
+			add_bignum(c, &aCopy, &tmp);
 			*c = tmp;
 		}
 
-		digit_shift(&row,1);
+		leftShift(&aCopy, 1);
 	}
 
-	for (i=0; i<= b->numFractions; i++)
+	// Multiple by the integer numbers.
+	for (i = 0; i <= b->numIntegers; i++)
 	{
-		for(j=1;j<= b->fractions[i];j++)
+		digit = b->integers[i];
+
+		for(j = 1; j <= digit; j++)
 		{
-			add_bignum(c,&row,&tmp);
+			add_bignum(c, &aCopy, &tmp);
 			*c = tmp;
 		}
 
-		digit_shift(&row,1);
+		leftShift(&aCopy, 1);
 	}
 
-	if (a->sign == b ->sign)
-	{
-		c->sign = PLUS;
-	}
-	else
-	{
-		c->sign = MINUS;
-	}
+	c->sign = (a->sign == b->sign) ? PLUS : MINUS;
 
 	optimizeBignum(c);
 }
@@ -516,7 +589,7 @@ void divide_bignum(bignum *a, bignum *b, bignum *c)
 	c->numIntegers = a->numIntegers;
 
 	for (i=a->numIntegers; i>=0; i--) {
-		digit_shift(&row,1);
+		leftShift(&row,1);
 		row.integers[0] = a->integers[i];
 		c->integers[i] = 0;
 		while (compare_bignum(&row,b) != PLUS) {
@@ -591,10 +664,7 @@ int stringToBignum(char* string, bignum *num) {
 		}
 	}
 
-	if (num->sign == MINUS && num->numIntegers == 1 && num->numFractions == 0)
-	{
-		num->sign = PLUS;
-	}
+	optimizeBignum(num);
 
 	return EXIT_SUCCESS;
 }
@@ -640,8 +710,6 @@ void main()
 	int i, j;
 	int len = 0;
 	int isOkay = 0;
-	char *leftNumText, *rightNumText;
-	bignum leftNum, rightNum;
 
 	int numsSize = 100;
 	bignum *nums = (bignum *) malloc(sizeof(bignum) * numsSize);
@@ -674,8 +742,8 @@ void main()
 	for (i = 1; i < len; i++)
 	{
 		answer = compare_bignum(&nums[0], &nums[i]);
-		string = (answer == 0) ? "equal to" : ((answer > 0) ? "bigger than" : "smaller than");
-		printf("%s is %s %s\n", bignumToString(&nums[0]), string, bignumToString(&nums[i]));
+		string = (answer == 0) ? "=" : ((answer > 0) ? ">" : "<");
+		printf("%s %s %s\n", bignumToString(&nums[0]), string, bignumToString(&nums[i]));
 	}
 
 	printf("===================\n");
@@ -697,8 +765,8 @@ void main()
 	for (i = 1; i < len; i++)
 	{
 		answer = compare_bignum(&nums[0], &nums[i]);
-		string = (answer == 0) ? "equal to" : ((answer > 0) ? "bigger than" : "smaller than");
-		printf("%s is %s %s\n", bignumToString(&nums[0]), string, bignumToString(&nums[i]));
+		string = (answer == 0) ? "=" : ((answer > 0) ? ">" : "<");
+		printf("%s %s %s\n", bignumToString(&nums[0]), string, bignumToString(&nums[i]));
 	}
 
 	// Test math.
@@ -717,11 +785,11 @@ void main()
 			num2 = nums[j];
 			initializeBignum(&num3);
 			add_bignum(&num1, &num2, &num3);
-			printf("%s adds %s equal to %s\n", bignumToString(&num1), bignumToString(&num2), bignumToString(&num3));
+			printf("%s + %s = %s\n", bignumToString(&num1), bignumToString(&num2), bignumToString(&num3));
 		}
 	}
 
-	printf("\nTest multiple\n");
+	printf("\nTest subtract\n");
 	len = 0;
 	stringToBignum("1.1", &nums[len++]);
 	stringToBignum("-2.2", &nums[len++]);
@@ -735,8 +803,65 @@ void main()
 			num1 = nums[i];
 			num2 = nums[j];
 			initializeBignum(&num3);
+			subtract_bignum(&num1, &num2, &num3);
+			printf("%s - %s = %s\n", bignumToString(&num1), bignumToString(&num2), bignumToString(&num3));
+		}
+	}
+
+	printf("\nTest shift\n");
+	len = 0;
+	stringToBignum("1.00", &nums[len++]);
+	stringToBignum("0.01", &nums[len++]);
+	stringToBignum("-7654.3210", &nums[len++]);
+	stringToBignum("123.456", &nums[len++]);
+	stringToBignum("00000000.0000000000", &nums[len++]);
+	stringToBignum("1.1", &nums[len++]);
+
+	for (i = 0; i < len; i++)
+	{
+		num1 = nums[i];
+		j = i + 1;
+		printf("%s << %d = ", bignumToString(&num1), j);
+		leftShift(&num1, j);
+		printf("%s\n", bignumToString(&num1));
+	}
+
+	printf("===============\n");
+	len = 0;
+	stringToBignum("1.00", &nums[len++]);
+	stringToBignum("0.01", &nums[len++]);
+	stringToBignum("-7654.3210", &nums[len++]);
+	stringToBignum("123.456", &nums[len++]);
+	stringToBignum("00000000.0000000000", &nums[len++]);
+	stringToBignum("1.1", &nums[len++]);
+
+	for (i = 0; i < len; i++)
+	{
+		num1 = nums[i];
+		j = i + 1;
+		printf("%s >> %d = ", bignumToString(&num1), j);
+		rightShift(&num1, j);
+		printf("%s\n", bignumToString(&num1));
+	}
+
+	printf("\nTest multiple\n");
+	len = 0;
+	stringToBignum("2", &nums[len++]);
+	stringToBignum("-3", &nums[len++]);
+	stringToBignum("-7.7", &nums[len++]);
+	stringToBignum("11.11", &nums[len++]);
+	stringToBignum("0", &nums[len++]);
+	stringToBignum("-0", &nums[len++]);
+
+	for (i = 0; i < len; i++)
+	{
+		for (j = 0; j < len; j++)
+		{
+			num1 = nums[i];
+			num2 = nums[j];
+			initializeBignum(&num3);
 			multiply_bignum(&num1, &num2, &num3);
-			printf("%s multiples %s equal to %s\n", bignumToString(&num1), bignumToString(&num2), bignumToString(&num3));
+			printf("%s * %s = %s\n", bignumToString(&num1), bignumToString(&num2), bignumToString(&num3));
 		}
 	}
 
