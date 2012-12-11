@@ -35,10 +35,10 @@ http://www.amazon.com/exec/obidos/ASIN/0387001638/thealgorithmrepo/
 //#undef max
 //#endif
 
-#define	MAXDIGITS	10000		/* maximum length bignum */ 
+#define	MAXDIGITS	10000
 
-#define PLUS		1		/* positive sign bit */
-#define MINUS		-1		/* negative sign bit */
+#define PLUS		1
+#define MINUS		-1
 
 typedef struct {
 	int decimals[MAXDIGITS];	// The decimal part.
@@ -81,6 +81,54 @@ void print_bignum(bignum *n)
 	}
 
 	printf("\n");
+}
+
+char * bignumToString(bignum *num)
+{
+	int i;
+	int len;
+	int count = 1;
+	char *string;
+	int stringIndex = 0;
+
+	if (num->sign == MINUS)
+	{
+		count++;
+	}
+
+	count += num->numDecimals;
+
+	if (num->numFractions > 0)
+	{
+		count += num->numFractions + 1;
+	}
+
+	string = (char *) malloc(sizeof(char) * count);
+
+
+	if (num->sign == MINUS)
+	{
+		string[stringIndex++] = '-';
+	}
+
+	for (i = num->numDecimals - 1; i >= 0; i--)
+	{
+		string[stringIndex++] = num->decimals[i] + '0';
+	}
+
+	if (num->numFractions > 0)
+	{
+		string[stringIndex++] = '.';
+
+		for (i = 0, len = num->numFractions; i < len; i++)
+		{
+			string[stringIndex++] = num->fractions[i] + '0';
+		}
+	}
+
+	string[stringIndex++] = '\0';
+
+	return string;
 }
 
 void initialize_bignum(bignum *num)
@@ -189,6 +237,73 @@ void add_bignum(bignum *a, bignum *b, bignum *c)
 	// TODO: call optimize function.
 }
 
+int compare_bignum(bignum *a, bignum *b)
+{
+	int i;
+	int minNumFraction;
+
+	//zero_justify(a);
+	//zero_justify(b);
+
+	// Compaire the sign.
+	if (a->sign != b->sign)
+	{
+		return (a->sign == PLUS) ? 1 : -1;
+	}
+
+	// Compare the decimals.
+	if (a->numDecimals > b->numDecimals)
+	{
+		return a->sign;
+	}
+
+	if (b->numDecimals > a->numDecimals)
+	{
+		return b->sign;
+	}
+
+	for (i = a->numDecimals - 1; i >= 0; i--)
+	{
+		if (a->decimals[i] > b->decimals[i])
+		{
+			return a->sign;
+		}
+
+		if (b->decimals[i] > a->decimals[i])
+		{
+			return b->sign;
+		}
+	}
+
+	// Compare the fractions.
+	minNumFraction = (a->numFractions < b->numFractions) ? a->numFractions : b->numFractions;
+
+	for (i = 0; i < minNumFraction; i++)
+	{
+		if (a->fractions[i] > b->fractions[i])
+		{
+			return a->sign;
+		}
+
+		if (b->fractions[i] > a->fractions[i])
+		{
+			return b->sign;
+		}
+	}
+
+	if (a->numFractions > b->numFractions)
+	{
+		return a->sign;
+	}
+
+	if (b->numFractions > a->numFractions)
+	{
+		return b->sign;
+	}
+
+	return 0;
+}
+
 void subtract_bignum(bignum *a, bignum *b, bignum *c)
 {
 	int carry = 0;
@@ -236,8 +351,7 @@ void subtract_bignum(bignum *a, bignum *b, bignum *c)
 
 		if(left < right)
 		{
-			compare_bignum(a->fractions[i], b->fractions[i]);
-
+			compare_bignum(a, b);
 		}
 
 		if (addition >= 10)
@@ -316,24 +430,6 @@ void subtract_bignum(bignum *a, bignum *b, bignum *c)
 	//}
 
 	zero_justify(c);
-}
-
-int compare_bignum(bignum *a, bignum *b)
-{
-	int i;
-
-	if ((a->sign == MINUS) && (b->sign == PLUS)) return(PLUS);
-	if ((a->sign == PLUS) && (b->sign == MINUS)) return(MINUS);
-
-	if (b->numDecimals > a->numDecimals) return (PLUS * a->sign);
-	if (a->numDecimals > b->numDecimals) return (MINUS * a->sign);
-
-	for (i = a->numDecimals; i>=0; i--) {
-		if (a->decimals[i] > b->decimals[i]) return(MINUS * a->sign);
-		if (b->decimals[i] > a->decimals[i]) return(PLUS * a->sign);
-	}
-
-	return(0);
 }
 
 void zero_justify(bignum *n)
@@ -519,64 +615,86 @@ void analizeNumString(char *string, int *numChars, int *numDecimals, int *numFra
 	*numFractions = _numFractions;
 }
 
-char* bignumToString(bignum *num) {
-	// Transfer the given big number to a string.
-	return NULL;
-}
-
 void main()
 {
+	int i;
 	int isOkay = 0;
 	char *leftNumText, *rightNumText;
 	bignum leftNum, rightNum;
 
-	char *string1 = "-12.34";
+	int numsSize = 10;
+	bignum *nums = (bignum *) malloc(sizeof(bignum) * numsSize);
 	bignum num1;
-	char *string2 = "-1.23";
 	bignum num2;
 	bignum num3;
+	char *string = NULL;
+	int answer;
 
 	initialize_bignum(&num1);
-	isOkay = stringToBignum(string1, &num1);
+	isOkay = stringToBignum("-12.34", &num1);
 	print_bignum(&num1);
 
 	initialize_bignum(&num2);
-	isOkay = stringToBignum(string2, &num2);
+	isOkay = stringToBignum("-1.23", &num2);
 	print_bignum(&num2);
 
 	add_bignum(&num1, &num2, &num3);
 	print_bignum(&num3);	// Expect -1.
 
-	while (scanf_s("%s %s\n",&leftNumText, &rightNumText) != EOF) {
-		isOkay = stringToBignum(leftNumText, &leftNum);
-		isOkay = stringToBignum(rightNumText, &rightNum);
-
-		printf("left = %s, right = %s", bignumToString(&leftNum), bignumToString(&rightNum));
-
-		/*
-		add_bignum(&n1,&n2,&n3);
-		printf("addition -- ");
-		print_bignum(&n3);
-
-		printf("compare_bignum a ? b = %d\n",compare_bignum(&n1, &n2));
-
-		subtract_bignum(&n1,&n2,&n3);
-		printf("subtraction -- ");
-		print_bignum(&n3);
-
-		multiply_bignum(&n1,&n2,&n3);
-		printf("multiplication -- ");
-		print_bignum(&n3);
-
-		int_to_bignum(0,&zero);
-		if (compare_bignum(&zero, &n2) == 0)
-		printf("division -- NaN \n");
-		else {
-		divide_bignum(&n1,&n2,&n3);
-		printf("division -- ");
-		print_bignum(&n3);
-		}
-		printf("--------------------------\n");
-		*/
+	for (i = 0; i < 10; i++)
+	{
+		initialize_bignum(&nums[i]);
 	}
+
+	// Test compare
+	isOkay = stringToBignum("-12.34", &nums[0]);
+	isOkay = stringToBignum("12.34", &nums[1]);
+	isOkay = stringToBignum("-12.34", &nums[2]);
+	isOkay = stringToBignum("-10.34", &nums[3]);
+	isOkay = stringToBignum("12", &nums[4]);
+	isOkay = stringToBignum("-12.3", &nums[5]);
+
+	for (i = 1; i < 6; i++)
+	{
+		string = bignumToString(&nums[0]);
+		string = bignumToString(&nums[i]);
+		answer = compare_bignum(&nums[0], &nums[i]);
+		string = (answer == 0) ? "equal to" : ((answer > 0) ? "bigger than" : "smaller than");
+		printf("%s is %s %s\n", bignumToString(&nums[0]), string, bignumToString(&nums[i]));
+	}
+
+	printf("Hello world");
+
+	//while (scanf_s("%s %s\n",&leftNumText, &rightNumText) != EOF) {
+	//	isOkay = stringToBignum(leftNumText, &leftNum);
+	//	isOkay = stringToBignum(rightNumText, &rightNum);
+
+	//	printf("left = %s, right = %s", bignumToString(&leftNum), bignumToString(&rightNum));
+
+	//	/*
+	//	add_bignum(&n1,&n2,&n3);
+	//	printf("addition -- ");
+	//	print_bignum(&n3);
+
+	//	printf("compare_bignum a ? b = %d\n",compare_bignum(&n1, &n2));
+
+	//	subtract_bignum(&n1,&n2,&n3);
+	//	printf("subtraction -- ");
+	//	print_bignum(&n3);
+
+	//	multiply_bignum(&n1,&n2,&n3);
+	//	printf("multiplication -- ");
+	//	print_bignum(&n3);
+
+	//	int_to_bignum(0,&zero);
+	//	if (compare_bignum(&zero, &n2) == 0)
+	//	printf("division -- NaN \n");
+	//	else {
+	//	divide_bignum(&n1,&n2,&n3);
+	//	printf("division -- ");
+	//	print_bignum(&n3);
+	//	}
+	//	printf("--------------------------\n");
+	//	*/
+	//}
 }

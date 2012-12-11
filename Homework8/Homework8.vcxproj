@@ -14,7 +14,7 @@
     <ProjectGuid>{8A94ED55-90D4-41FE-BAB0-C967C6AC23DD}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ConsoleApplication1</RootNamespace>
-    <ProjectName>Homework8</ProjectName>
+    <ProjectName>Homework8EC</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -79,7 +79,7 @@
   <ItemGroup>
     <ClCompile Include="bignum.c" />
     <ClCompile Include="getch.c" />
-    <ClCompile Include="hw8.c" />
+    <ClCompile Include="hw8ec.c" />
     <ClCompile Include="stack.c" />
   </ItemGroup>
   <ItemGroup>
